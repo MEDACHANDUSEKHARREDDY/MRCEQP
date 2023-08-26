@@ -1,0 +1,181 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Details</title>
+    <!-- Include Bootstrap CSS and JavaScript -->
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <h1>Enter Your Details</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.name.label_tag }} {{ form.name }}
+        <br>
+        {{ form.email.label_tag }} {{ form.email }}
+        <br>
+        <input type="submit" value="Start Quiz" id="startQuizBtn" class="btn btn-success" disabled>
+    </form>
+
+    <!-- Include the email verification modal content from email_verification.html -->
+    <!-- The email verification modal will be displayed automatically when the user enters an email address -->
+
+<div class="overlay" id="emailVerificationOverlay">
+    <div class="modal fade" id="emailVerificationModal" tabindex="-1" role="dialog" aria-labelledby="emailVerificationModalLabel" aria-hidden="true" data-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="emailVerificationModalLabel">Email Verification</h5>
+                </div>
+                <div class="modal-body">
+                    {% if email_verified %}
+                        <p>Email verified (Verified)</p>
+                    {% else %}
+                        <p>An email with a verification code has been sent to your email address.</p>
+                        <div class="verification-code-inputs">
+                            <input type="text" class="verification-code-input" maxlength="1" autofocus>
+                            <input type="text" class="verification-code-input" maxlength="1">
+                            <input type="text" class="verification-code-input" maxlength="1">
+                            <input type="text" class="verification-code-input" maxlength="1">
+                        </div>
+                        <p id="verificationError" class="text-danger" style="display: none;">Verification code is incorrect.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const startQuizBtn = document.getElementById("startQuizBtn");
+        const emailVerificationModal = new bootstrap.Modal(document.getElementById("emailVerificationModal"), {
+            backdrop: 'static',
+            keyboard: false
+        });
+
+        const verificationCodeInputs = document.querySelectorAll(".verification-code-input");
+        const emailInput = document.getElementById("id_email");
+        const verificationError = document.getElementById("verificationError");
+        const emailVerificationOverlay = document.getElementById("emailVerificationOverlay"); // Define emailVerificationOverlay
+
+        emailInput.addEventListener("blur", function() {
+            const email = emailInput.value;
+            if (email) {
+                emailVerificationModal.show();
+                sendVerificationEmail(email);
+                emailVerificationOverlay.classList.add("active");
+                enableVerificationCodeInputs();
+            }
+        });
+
+        verificationCodeInputs.forEach((input, index) => {
+            input.addEventListener("input", function() {
+                const value = this.value;
+                if (value.length === 1 && index < verificationCodeInputs.length - 1) {
+                    verificationCodeInputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener("keydown", function(event) {
+                if (event.key === "Backspace" && this.value.length === 0 && index > 0) {
+                    verificationCodeInputs[index - 1].focus();
+                }
+            });
+        });
+
+        function enableVerificationCodeInputs() {
+            const verificationCodeInputs = document.querySelectorAll(".verification-code-input");
+            verificationCodeInputs.forEach(input => {
+                input.removeAttribute("disabled");
+                input.addEventListener("input", function() {
+                    const email = emailInput.value
+                    const verificationCode = Array.from(verificationCodeInputs).map(input => input.value).join('');
+                    console.log("Email:", email);
+                    console.log("Verification Code:", verificationCode);
+
+                    console.log("Length of the string:", verificationCode.length);
+
+                    if (verificationCode.length === 4) {
+                        verifyEmail(email,verificationCode);
+                    } else {
+                        verificationError.style.display = "block";
+                    }
+                });
+            });
+        }
+
+        function sendVerificationEmail(email) {
+            fetch("/user_details/send-verification-email/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log("Verification email sent successfully.");
+                } else {
+                    console.error("Error sending verification email:", data.error_message);
+                }
+            })
+            .catch(error => {
+                console.error("Error sending verification email:", error);
+            });
+        }
+
+        function verifyEmail(email, verificationCode) {
+            fetch("{% url 'verify_email' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: JSON.stringify({ email: email, verification_code: verificationCode })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    verificationError.style.display = "none";
+                    emailVerificationOverlay.classList.remove("active");
+                    emailVerificationModal.hide();
+                    emailVerificationModal._backdrop.style.pointerEvents = "auto"; // Enable backdrop clicks
+                    startQuizBtn.disabled = false; // Enable the "Start Quiz" button
+                } else {
+                    verificationError.style.display = "block";
+                }
+            })
+            .catch(error => {
+                console.error("Error verifying email:", error);
+            });
+        }
+
+        function handleVerificationSuccess() {
+            verificationError.style.display = "none";
+            emailVerificationOverlay.classList.remove("active");
+            startQuizBtn.disabled = false; // Enable the "Start Quiz" button
+            emailVerificationModal.hide();
+        }
+
+        setTimeout(() => {
+             // Simulate successful verification after a delay
+            ; // Hide the modal when verification is successful
+        }, 3000);
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(";").shift();
+        }
+    });
+</script>
+</body>
+</html>

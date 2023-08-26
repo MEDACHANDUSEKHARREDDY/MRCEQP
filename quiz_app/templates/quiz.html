@@ -1,0 +1,171 @@
+{% extends 'base.html' %} 
+{% load static %}
+{% load  question_status_tags %}
+{% block title %}Quiz Program{%endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'style.css' %}" />
+<div class="screenshot-overlay"></div>
+<div class="container">
+    <h3>Question {{ question_number }}</h3>
+    <p>Time Left: <span id="time_left">{{ time_left }}</span></p>
+        <!-- Add question navigation buttons -->
+        <p>Debug: question_status_dict: {{ question_status_dict }}</p>
+    <div class= "quiz-navigation">
+        {% for q_number in quiz_numbers %}
+            {% with q_status=question_status_dict|get_question_status:q_number %}
+                <a href="{% url 'quiz_with_number' question_number=q_number %}"
+                    class="question-nav-button question-{{ q_number }} {% if q_status == 'answered_saved' %}blue{% elif q_status == 'answered_not_saved' %}orange{% elif q_status == 'not_answered' %}red{% endif %} {% if q_status == 'current_question' %}current_question{% endif %}"
+                    data-status="{{ q_status }}" data-question="{{ q_number }}">
+                     {{ q_number }}
+                </a>
+            {% endwith %}
+        {% endfor %}
+    </div>
+    <br>
+
+    {% if question_data.0 %}
+        <form method="post">
+            {% csrf_token %}
+            <h3>{{ question_data.0.question_text }}</h3>
+            {% for option in question_data.0.get_options %} 
+                <input type="radio" id="option_{{ option }}" name="question_{{ question_data.0.code }}"value="{{ option }}" 
+                {% if question_data.1 == option %}checked{% endif %}>
+                <label for="option_{{ option }}">{{ option }}</label><br />
+            {% endfor %}
+                <input type="hidden" name="question_code"value="{{ question_data.0.code }}"/>
+                <button type="submit" name="action" value="Save Answer" class="btn">Save</button>
+            {% if next_question_number and question_number < total_questions_limit %}
+                <button type="submit" name="action" value="Next" class="btn"><a href="{% url 'quiz_with_number' next_question_number %}"></a>Next</button>
+            {% endif %} 
+            {% if question_number == total_questions_limit %}
+                <button type="submit" name="action" value="Submit All" class="btn">Submit</button>
+            {% endif %}
+        </form>
+    {% else %}
+        <p>Congratulations! You have completed the quiz.</p>
+        <p>Total Score: {{ total_score }}</p>
+        <p>Thank you for taking the quiz!</p>
+    {% endif %}
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Fetch user_responses_dict as JSON from the server (you need to implement this view)
+    fetch("{% url 'get_user_responses' %}")
+        .then((response) => response.json())
+        .then((data) => {
+            const userResponses = data.user_responses;
+            const questionNavButtons = document.querySelectorAll(
+            ".question-nav-button"
+        );
+
+        questionNavButtons.forEach((button) => {
+            const questionCode = button.getAttribute("href").split("=")[1];
+            if (userResponses[questionCode]) {
+                button.textContent += " (Answered)";
+            }
+            });
+        });
+    });
+</script>
+
+<script>
+  // Disable the question navigation buttons temporarily
+    function disableQuestionNavButtons() {
+        const buttons = document.querySelectorAll(".question-nav-button");
+        buttons.forEach((button) => {
+            button.disabled = true;
+        });
+    setTimeout(() => {
+        buttons.forEach((button) => {
+            button.disabled = false;
+        });
+        }, 1000); // Re-enable after 1 second
+    }
+
+  // Attach the event listener to the question navigation buttons
+    const navButtons = document.querySelectorAll(".question-nav-button");
+    navButtons.forEach((button) => {
+        button.addEventListener("click", disableQuestionNavButtons);
+    });
+</script>
+
+<script>
+    const totalQuizTimeSeconds = 1200; // Total quiz time in seconds (30 minutes)
+    let initialQuizStartTime = new Date("{{ request.session.quiz_start_time }}"); // Convert to JavaScript Date object
+
+    function updateTimerOnUI() {
+        const timer = document.getElementById("time_left");
+        timer.textContent = formatTime(getRemainingTime());
+    }
+
+    function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${String(minutes).padStart(2, "0")}:${String(
+        remainingSeconds
+        ).padStart(2, "0")}`;
+    }
+
+    function getRemainingTime() {
+        const currentTime = new Date();
+        const elapsedMilliseconds = currentTime - initialQuizStartTime;
+        const elapsedSeconds = Math.floor(elapsedMilliseconds / 1000);
+        const remainingSeconds = totalQuizTimeSeconds - elapsedSeconds;
+        return Math.max(remainingSeconds, 0); // Ensure non-negative value
+    }
+
+    function endQuiz() {
+        clearInterval(interval); // Stop the timer
+        alert("Time is up! The quiz has ended.");
+        localStorage.removeItem("quizStartTime"); // Clear the saved start time
+        window.location.href = "{% url 'quiz_finished' %}";
+    }
+
+  // Update the timer immediately when the page loads
+  updateTimerOnUI();
+
+  // Set the interval to update the timer every second
+    const interval = setInterval(function () {
+        const remainingTime = getRemainingTime();
+        if (remainingTime > 0) {
+        updateTimerOnUI();
+        } else {
+        endQuiz();
+        }
+    }, 1000);
+    console.log("Initial quiz start time:", initialQuizStartTime);
+    console.log("Remaining time:", getRemainingTime());
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Fetch user_responses_dict as JSON from the server (you need to implement this view)
+        fetch("{% url 'get_user_responses' %}")
+            .then((response) => response.json())
+            .then((data) => {
+                const userResponses = data.user_responses;
+                const questionNavButtons = document.querySelectorAll(".question-nav-button");
+
+                questionNavButtons.forEach((button) => {
+                    const questionCode = button.getAttribute("href").split("=")[1];
+                    if (userResponses[questionCode]) {
+                        button.textContent += " (Answered)";
+                    }
+                });
+            });
+    });
+
+    // Attach click event listeners to question navigation buttons
+    const navButtons = document.querySelectorAll(".question-nav-button");
+    navButtons.forEach(button => {
+        button.addEventListener("click", function (event) {
+            event.preventDefault();
+            const questionNumber = button.getAttribute("data-question");
+            // Perform any action you want based on the clicked button
+            console.log("Clicked on question", questionNumber);
+        });
+    });
+</script>
+
+{% endblock %}

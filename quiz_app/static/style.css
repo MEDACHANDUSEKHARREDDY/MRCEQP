@@ -1,0 +1,119 @@
+body {
+    -webkit-user-select: none;
+    /* Safari/Chrome */
+    -moz-user-select: none;
+    /* Firefox */
+    -ms-user-select: none;
+    /* Internet Explorer/Edge */
+    user-select: none;
+}
+
+.screenshot-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    /* Semi-transparent black */
+    pointer-events: none;
+    /* Allow interaction with elements beneath the overlay */
+    z-index: 9999;
+    /* Ensure the overlay appears above other content */
+}
+
+h3 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+/* Style for options */
+/* Add this CSS to your style.css or within a <style> tag in the HTML */
+
+
+/* Active class for overlay */
+.overlay.active {
+    display: block;
+}
+
+/* Center modal vertically and horizontally */
+.modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    margin: 0;
+}
+
+/* Adjust the modal content width if needed */
+.modal-content {
+    max-width: 500px;
+    width: 100%;
+}
+
+/* Center verification code inputs */
+.verification-code-inputs {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+/* Style verification code inputs */
+.verification-code-input {
+    width: 40px;
+    height: 40px;
+    text-align: center;
+    font-size: 20px;
+}
+
+.quiz-navigation {
+    position: fixed;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+}
+
+.question-nav-button {
+    padding: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #333;
+    transition: background-color 0.3s ease;
+}
+
+#time_left {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.question-nav-button.active {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Colors for question navigation buttons */
+.red {
+    background-color: red;
+    color: white;
+    /* Add appropriate text color for visibility */
+}
+
+.blue {
+    background-color: blue;
+    color: white;
+}
+
+.orange {
+    background-color: orange;
+    color: white;
+}
+
+.question-nav-button.current_question {
+    background-color: green;
+    color: white;
+}

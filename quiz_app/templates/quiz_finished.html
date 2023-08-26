@@ -1,0 +1,15 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+    <link rel="website icon" type="jpg" href="{%static 'qficon.jpg'%}"/>
+</head>
+<body>
+    <h1>Quiz Finished</h1>
+    <p>Thank you for completing the quiz, {{ user_name }}!</p>
+    <p>Your total score: {{ total_score }}</p>
+</body>
+</html>

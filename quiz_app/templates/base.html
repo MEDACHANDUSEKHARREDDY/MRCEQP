@@ -1,0 +1,27 @@
+<!-- base.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<html>
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="website icon" type="png" href="{%static 'pageicon.png'%}"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+</head>
+<body>
+    <header>
+        <h1>Quiz Program</h1>
+    </header>
+
+    <main>
+        {% block content %}
+    
+        {% endblock %}
+    </main>
+
+    <footer>
+    </footer>
+</body>
+</html>
