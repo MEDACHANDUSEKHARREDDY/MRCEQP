@@ -22,6 +22,6 @@ from quiz_app.views import index  # Import the index view
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),  # Add URL for the index page
-    path('index/', include('quiz_app.urls')),
+    path('user_details/', include('quiz_app.urls')),
 ]
 
